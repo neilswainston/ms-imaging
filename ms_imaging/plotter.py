@@ -13,7 +13,7 @@ from itertools import product
 import sys
 
 import matplotlib.pyplot as plt
-from ms_imaging import reader
+from ms_imaging import analyser, reader
 import numpy as np
 import pandas as pd
 
@@ -89,7 +89,9 @@ def _divide(col, precision=8):
 def main(args):
     '''main method.'''
     df = reader.read(args[0])
-    df.to_csv(args[2], index=False)
+
+    df = analyser.standardise(df, float(args[2]))
+    df.to_csv(args[3], index=False)
     plot(df, float(args[1]))
 
 
