@@ -9,10 +9,13 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 '''
 # pylint: disable=invalid-name
 from collections import Counter
+from itertools import product
 import sys
 
 import matplotlib.pyplot as plt
 from ms_imaging import reader
+import numpy as np
+import pandas as pd
 
 
 def plot(df, target_mz):
@@ -27,17 +30,42 @@ def plot(df, target_mz):
 
 def _get_matrix(df, target_mz):
     '''Get matrix for plotting.'''
-    df['x_scale'] = _scale(df['x'])
-    df['y_scale'] = _scale(df['y'])
+    matrix = list(product(_get_range(df['x']), _get_range(df['y'])))
+    matrix_df = pd.DataFrame(matrix, columns=['x', 'y'])
+
+    # Add x,y scale:
+    matrix_df['x_scale'] = _scale(matrix_df['x'])
+    matrix_df['y_scale'] = _scale(matrix_df['y'])
+
     target_df = df[df['mz'] == target_mz]
 
-    return target_df.pivot('y_scale', 'x_scale', 'i').fillna(0).values, \
-        target_df['i'].max()
+    matrix_df = _merge_float(matrix_df, target_df, ['x', 'y'])
+
+    return matrix_df.pivot('y_scale', 'x_scale', 'i').fillna(0).values, \
+        matrix_df['i'].max()
+
+
+def _get_range(col):
+    '''Get range.'''
+    return np.arange(col.min(), col.max(), _get_diff(col))
 
 
 def _scale(col):
     '''Scale column.'''
-    return [int(round(val)) for val in (col - col.min()) / _get_diff(col)]
+    return ((col - col.min()) / _get_diff(col)).apply(lambda x: int(round(x)))
+
+
+def _merge_float(left, right, on):
+    '''Merge dataframes by float column(s).'''
+    for df, col in product([left, right], on):
+        df.loc[:, col] = _multiply(df[col])
+
+    left = pd.merge(left, right, how='left', on=on)
+
+    for df, col in product([left, right], on):
+        df.loc[:, col] = _divide(df[col])
+
+    return left
 
 
 def _get_diff(col, precision=8):
@@ -48,9 +76,20 @@ def _get_diff(col, precision=8):
     return counter.most_common(1)[0][0]
 
 
+def _multiply(col, precision=8):
+    '''Multiple column, for float->int conversion.'''
+    return np.round(col * 10 ** precision).astype(int)
+
+
+def _divide(col, precision=8):
+    '''Divide column, for int->float conversion.'''
+    return np.round(col / (10 ** precision))
+
+
 def main(args):
     '''main method.'''
     df = reader.read(args[0])
+    df.to_csv(args[2], index=False)
     plot(df, float(args[1]))
 
 
