@@ -21,8 +21,6 @@ import pandas as pd
 
 def plot(df, target_mz, tol=20):
     '''Plot data.'''
-    _plot_hist(df['i_raw'])
-
     extent = [df['x'].min(), df['x'].max(), df['y'].min(), df['y'].max()]
 
     matrix, max_i = _get_matrix(df, target_mz, tol)
@@ -30,7 +28,7 @@ def plot(df, target_mz, tol=20):
     # _plot_hist(sorted([val for row in matrix for val in row if val > 0]))
 
     plt.clf()
-    plt.imshow(matrix, cmap='Reds', extent=extent, vmin=0, vmax=max_i)
+    plt.imshow(matrix, cmap='hot', extent=extent, vmin=0, vmax=max_i)
     plt.show()
 
 
@@ -48,7 +46,7 @@ def _get_matrix(df, target_mz, tol):
 
     matrix_df = _merge_float(matrix_df, target_df, ['x', 'y'])
 
-    return matrix_df.pivot('y_scale', 'x_scale', 'i').values, \
+    return matrix_df.pivot('y_scale', 'x_scale', 'i').fillna(0).values, \
         matrix_df['i'].max()
 
 
@@ -93,18 +91,10 @@ def _divide(col, precision=8):
     return np.round(col / (10 ** precision))
 
 
-def _plot_hist(vals):
-    '''Plot histogram.'''
-    # the histogram of the data
-    plt.hist(vals, 1000, normed=1, facecolor='green', alpha=0.75)
-
-    plt.show()
-
-
 def main(args):
     '''main method.'''
     df = reader.read(args[0])
-
+    df = analyser.filter_bkg(df)
     df = analyser.standardise(df, float(args[2]))
     df.to_csv(args[3], index=False)
     plot(df, float(args[1]))

@@ -33,6 +33,16 @@ def cluster(df, n_clusters=384, verbose=0):
     return df
 
 
+def filter_bkg(df, threshold=0.05):
+    '''Apply background filter.'''
+    filtered = []
+
+    for _, group in df.groupby(['x', 'y']):
+        filtered.append(group[(group['i'] / group['i'].max()) > threshold])
+
+    return pd.concat(filtered)
+
+
 def standardise(df, mz_stnd, tol=20):
     '''Apply internal standard.'''
     err = mz_stnd * tol * 10 ** -6
