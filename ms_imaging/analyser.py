@@ -33,15 +33,15 @@ def cluster(df, n_clusters=384, verbose=0):
     return df
 
 
-def standardise(df, mz_stnd):
+def standardise(df, mz_stnd, tol=20):
     '''Apply internal standard.'''
-    groups = []
+    err = mz_stnd * tol * 10 ** -6
+    stnd_df = df[(df['mz'] > mz_stnd - err) & (df['mz'] < mz_stnd + err)]
+    stnd_df = pd.merge(df, stnd_df,
+                       on=['x', 'y'],
+                       suffixes=['_raw', '_stnd'])
 
-    for _, group in df.groupby(['x', 'y']):
-        i_stnd = group[np.isclose(group['mz'], mz_stnd, 0.000001)]['i']
+    stnd_df.rename(columns={'mz_raw': 'mz'}, inplace=True)
+    stnd_df['i'] = stnd_df['i_raw'] / stnd_df['i_stnd']
 
-        if not i_stnd.empty:
-            group['i_stnd'] = group['i'] / i_stnd.iloc[0]
-            groups.append(group)
-
-    return pd.concat(groups)
+    return stnd_df
