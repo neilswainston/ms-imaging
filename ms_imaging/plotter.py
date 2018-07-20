@@ -19,13 +19,13 @@ import numpy as np
 import pandas as pd
 
 
-def plot(df, target_mz):
+def plot(df, target_mz, tol=20):
     '''Plot data.'''
     _plot_hist(df['i_raw'])
 
     extent = [df['x'].min(), df['x'].max(), df['y'].min(), df['y'].max()]
 
-    matrix, max_i = _get_matrix(df, target_mz)
+    matrix, max_i = _get_matrix(df, target_mz, tol)
 
     # _plot_hist(sorted([val for row in matrix for val in row if val > 0]))
 
@@ -34,7 +34,7 @@ def plot(df, target_mz):
     plt.show()
 
 
-def _get_matrix(df, target_mz):
+def _get_matrix(df, target_mz, tol):
     '''Get matrix for plotting.'''
     matrix = list(product(_get_range(df['x']), _get_range(df['y'])))
     matrix_df = pd.DataFrame(matrix, columns=['x', 'y'])
@@ -43,7 +43,8 @@ def _get_matrix(df, target_mz):
     matrix_df['x_scale'] = _scale(matrix_df['x'])
     matrix_df['y_scale'] = _scale(matrix_df['y'])
 
-    target_df = df[df['mz'] == target_mz]
+    err = target_mz * tol * 10 ** -6
+    target_df = df[(df['mz'] > target_mz - err) & (df['mz'] < target_mz + err)]
 
     matrix_df = _merge_float(matrix_df, target_df, ['x', 'y'])
 
