@@ -96,6 +96,7 @@ def main(args):
     df = reader.read(args[0])
     df = analyser.filter_bkg(df)
     df = analyser.standardise(df, float(args[2]))
+    df = analyser.cluster(df, verbose=1)
     df.to_csv(args[3], index=False)
     plot(df, float(args[1]))
 
