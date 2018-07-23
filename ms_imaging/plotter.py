@@ -32,7 +32,7 @@ def plot(df, target_mz, tol=20):
     plt.show()
 
 
-def _get_matrix(df, target_mz, tol):
+def _get_matrix(df, mz_target, tol):
     '''Get matrix for plotting.'''
     matrix = list(product(_get_range(df['x']), _get_range(df['y'])))
     matrix_df = pd.DataFrame(matrix, columns=['x', 'y'])
@@ -41,8 +41,8 @@ def _get_matrix(df, target_mz, tol):
     matrix_df['x_scale'] = _scale(matrix_df['x'])
     matrix_df['y_scale'] = _scale(matrix_df['y'])
 
-    err = target_mz * tol * 10 ** -6
-    target_df = df[(df['mz'] > target_mz - err) & (df['mz'] < target_mz + err)]
+    err = mz_target * tol * 10 ** -6
+    target_df = df[(df['mz'] > mz_target - err) & (df['mz'] < mz_target + err)]
 
     matrix_df = _merge_float(matrix_df, target_df, ['x', 'y'])
 
@@ -97,6 +97,7 @@ def main(args):
     df = analyser.filter_bkg(df)
     df = analyser.standardise(df, float(args[2]))
     df = analyser.cluster(df, verbose=1)
+    df = analyser.quantify(df, float(args[1]))
     df.to_csv(args[3], index=False)
     plot(df, float(args[1]))
 

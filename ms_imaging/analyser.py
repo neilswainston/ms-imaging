@@ -8,7 +8,10 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 @author:  neilswainston
 '''
 # pylint: disable=invalid-name
+import math
+
 from sklearn.cluster import MiniBatchKMeans
+from sklearn.preprocessing import MinMaxScaler
 
 import numpy as np
 import pandas as pd
@@ -55,3 +58,29 @@ def standardise(df, mz_stnd, tol=20):
     stnd_df['i'] = stnd_df['i_raw'] / stnd_df['i_stnd']
 
     return stnd_df
+
+
+def quantify(df, mz_target, tol=20):
+    '''Quantify drops.'''
+    quantified = []
+
+    scaler = MinMaxScaler()
+    df['norm_distance_from_centre'] = \
+        scaler.fit_transform(df['distance_from_centre'].values.reshape(-1, 1))
+
+    for _, group in df.groupby('cluster'):
+        err = mz_target * tol * 10 ** -6
+        quant_df = group[(group['mz'] > mz_target - err) &
+                         (group['mz'] < mz_target + err)]
+
+        if not quant_df.empty:
+            weights = 1 - quant_df['norm_distance_from_centre']
+            mean_i = np.average(quant_df['i'], weights=weights)
+            std_i = math.sqrt(np.average((quant_df['i'] - mean_i)**2,
+                                         weights=weights))
+
+            group['mean_i'] = mean_i
+            group['std_i'] = std_i
+            quantified.append(group)
+
+    return pd.concat(quantified)
