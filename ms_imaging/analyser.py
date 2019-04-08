@@ -17,6 +17,19 @@ import numpy as np
 import pandas as pd
 
 
+def background_subtract(df):
+    '''Perform background subtract.'''
+    mz_data = []
+    num_spectra = len(df[['x', 'y']].drop_duplicates())
+
+    for mz, group in df.groupby('mz'):
+        mz_data.append([mz, len(group) / num_spectra])
+
+    mz_df = pd.DataFrame(mz_data, columns=['mz', 'frequency'])
+
+    return df.join(mz_df.set_index('mz'), on='mz')
+
+
 def cluster(df, n_clusters=384, verbose=0):
     '''Cluster.'''
     kmeans = MiniBatchKMeans(n_clusters=n_clusters,
@@ -25,7 +38,7 @@ def cluster(df, n_clusters=384, verbose=0):
 
     df['cluster'] = kmeans.labels_
 
-    centres = zip(*kmeans.cluster_centers_)
+    centres = list(zip(*kmeans.cluster_centers_))
     df['cluster_centre_x'] = df['cluster'].apply(lambda x: centres[0][x])
     df['cluster_centre_y'] = df['cluster'].apply(lambda y: centres[1][y])
     df['distance_from_centre'] = \

@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 
-def plot(df, target_mz, tol=20):
+def plot(df, target_mz, tol=500):
     '''Plot data.'''
     extent = [df['x'].min(), df['x'].max(), df['y'].min(), df['y'].max()]
 
@@ -94,12 +94,15 @@ def _divide(col, precision=8):
 def main(args):
     '''main method.'''
     df = reader.read(args[0])
-    df = analyser.filter_bkg(df)
-    df = analyser.standardise(df, float(args[2]))
-    df = analyser.cluster(df, verbose=1)
-    df = analyser.quantify(df, float(args[1]))
-    df.to_csv(args[3], index=False)
-    plot(df, float(args[1]))
+    df = analyser.background_subtract(df)
+    df.to_csv(args[1], index=False)
+
+    # df = analyser.filter_bkg(df)
+    # df = analyser.standardise(df, float(args[2]))
+    # df = analyser.cluster(df, verbose=1)
+    # df = analyser.quantify(df, float(args[1]))
+
+    # plot(df, float(args[2]))
 
 
 if __name__ == '__main__':
